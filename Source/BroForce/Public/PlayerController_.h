@@ -6,6 +6,8 @@
 #include "GameFramework/Pawn.h"
 #include "PlayerController_.generated.h"
 
+class UCameraComponent;
+class UStaticMeshComponent;
 
 UCLASS()
 class BROFORCE_API APlayerController_ : public APawn
@@ -29,6 +31,7 @@ public:
 
 	void CheckIfLanded();
 	void BindInput();
+	void UpdateCamera(float dt);
 
 	//Actions
 
@@ -36,13 +39,30 @@ public:
 	void MoveHorizontal(float value);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	UStaticMeshComponent* rigidBody;
+	UStaticMeshComponent* rigidBody = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UCameraComponent* gameCamera = nullptr;
+
+	USceneComponent* root = nullptr;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float jumpForce = 0.f;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float moveSpeed = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
+	float airMovementFraction = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
+	float gravityMultiplier = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
+	float minZToBeLanded = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Game Camera")
+	float camSpeed = 0.f;
 
 	UInputComponent* input;
 
