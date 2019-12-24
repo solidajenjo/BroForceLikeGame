@@ -8,6 +8,7 @@
 
 class UCameraComponent;
 class UStaticMeshComponent;
+class USphereComponent;
 
 UCLASS()
 class BROFORCE_API APlayerController_ : public APawn
@@ -29,9 +30,13 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void CheckIfLanded();
 	void BindInput();
+
+	void InertiaControl();
+	void CheckIfLanded();
+	
 	void UpdateCamera(float dt);
+	void RotatePlayer();
 
 	//Actions
 
@@ -40,6 +45,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* rigidBody = nullptr;
+
+	UPROPERTY(Category = "mycomp", VisibleDefaultsOnly)
+	USphereComponent* frontCollider = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UCameraComponent* gameCamera = nullptr;
@@ -56,6 +64,9 @@ public:
 	float airMovementFraction = 0.f;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
+	float frictionFactor = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float gravityMultiplier = 0.f;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
@@ -67,7 +78,10 @@ public:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Game Camera")
 	float verticalOffset = 0.f;
 
-	UInputComponent* input;
+	UPROPERTY(VisibleAnyWhere, BlueprintReadWrite)
+	bool bFrontCollision = false;
+
 
 	bool isLanded = false;
+	FRotator targetRot;
 };

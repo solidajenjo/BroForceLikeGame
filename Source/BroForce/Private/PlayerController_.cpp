@@ -5,7 +5,7 @@
 #include "..\Public\PlayerController_.h"
 #include "../Public/CustomUtils.h"
 #include "Camera/CameraComponent.h"
-
+#include "Components/SphereComponent.h"
 
 // Sets default values
 APlayerController_::APlayerController_()
@@ -18,6 +18,11 @@ APlayerController_::APlayerController_()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	rigidBody->SetStaticMesh(CubeMeshAsset.Object);
 
+	frontCollider = CreateDefaultSubobject<USphereComponent>(TEXT("FrontCollider"));
+	frontCollider->SetSphereRadius(20.f);
+	frontCollider->SetGenerateOverlapEvents(true);
+	frontCollider->AttachToComponent(rigidBody, FAttachmentTransformRules::KeepRelativeTransform);
+
 	gameCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("GameCamera"));
 
 }
@@ -28,6 +33,7 @@ void APlayerController_::BeginPlay()
 	Super::BeginPlay();
 	BindInput();
 
+	targetRot = FQuat::MakeFromEuler(FVector(0.f, 0.f, 180.f)).Rotator();
 }
 
 // Called every frame
@@ -35,20 +41,38 @@ void APlayerController_::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);	
 	UpdateCamera(DeltaTime);
+	InertiaControl();
 	CheckIfLanded();	
-	
+	RotatePlayer();
+
+	if (bFrontCollision) {
+		LOG_SCREEN_DT("Front col", 0.05f);
+	}
+	else
+		LOG_SCREEN_DT("NO Front col", 0.05f);
 }
 
 // Called to bind functionality to input
 void APlayerController_::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	input = PlayerInputComponent;
 
+}
+
+void APlayerController_::InertiaControl()
+{
+	if (isLanded) 
+	{
+		FVector pLV = rigidBody->GetPhysicsLinearVelocity() * frictionFactor;
+
+		rigidBody->SetPhysicsLinearVelocity(pLV);
+	}
 }
 
 void APlayerController_::CheckIfLanded()
 {
+	FVector pLV = rigidBody->GetPhysicsLinearVelocity();
+
 	//extra gravity to simulate a heavier player
 	rigidBody->SetPhysicsLinearVelocity(rigidBody->GetPhysicsLinearVelocity() - gameCamera->GetUpVector() * gravityMultiplier);
 
@@ -59,7 +83,7 @@ void APlayerController_::CheckIfLanded()
 	FVector testStartFVector = rigidBody->GetComponentLocation();
 	FVector testEndFVector = testStartFVector - gameCamera->GetUpVector() * 100;
 
-	FCollisionQueryParams TraceParams;// (TEXT("TraceOfAwesome"));
+	FCollisionQueryParams TraceParams;
 
 	if (TheWorld->LineTraceSingleByObjectType(testHitResult, testStartFVector, testEndFVector, ECC_WorldStatic, TraceParams))
 	{		
@@ -80,9 +104,10 @@ void APlayerController_::CheckIfLanded()
 
 void APlayerController_::BindInput()
 {
-	input->BindAction("Jump", IE_Pressed, this, &APlayerController_::Jump);
-	input->BindAxis("MoveForward", this, &APlayerController_::MoveHorizontal);
+	Super::InputComponent->BindAction("Jump", IE_Pressed, this, &APlayerController_::Jump);
+	Super::InputComponent->BindAxis("MoveForward", this, &APlayerController_::MoveHorizontal);
 }
+
 
 void APlayerController_::UpdateCamera(float dt)
 {
@@ -108,6 +133,13 @@ void APlayerController_::UpdateCamera(float dt)
 	gameCamera->SetWorldLocation(camPos);
 }
 
+void APlayerController_::RotatePlayer()
+{
+	FRotator rBRot = rigidBody->GetComponentRotation();
+	FRotator newRot = FMath::Lerp(rBRot, targetRot, 0.2f);
+	rigidBody->SetWorldRotation(newRot);
+}
+
 void APlayerController_::Jump()
 {
 	if (isLanded) {
@@ -117,8 +149,9 @@ void APlayerController_::Jump()
 
 void APlayerController_::MoveHorizontal(float value)
 {
-	if (value == 0.f)
+	if (abs(value) < 0.5f) { //Avoid thumbstick rebound
 		return;
+	}
 
 	FVector pLV = rigidBody->GetPhysicsLinearVelocity();
 	pLV.X = 0.f;
@@ -127,5 +160,15 @@ void APlayerController_::MoveHorizontal(float value)
 		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * value * moveSpeed);
 	else
 		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * value * moveSpeed * airMovementFraction);
+
+	FRotator rBRot = rigidBody->GetComponentRotation();
+	if (value < 0.f) 
+	{
+		targetRot = FQuat::MakeFromEuler(FVector(0.f, 0.f, 0.f)).Rotator();
+	}
+	else
+	{
+		targetRot = FQuat::MakeFromEuler(FVector(0.f, 0.f, 180.f)).Rotator();
+	}
 
 }
