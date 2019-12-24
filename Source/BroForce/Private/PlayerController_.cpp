@@ -15,8 +15,8 @@ APlayerController_::APlayerController_()
 	root = CreateDefaultSubobject<USceneComponent>("Root");
 	
 	rigidBody = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RigidBody"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh>SphereMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Sphere.Sphere'"));
-	rigidBody->SetStaticMesh(SphereMeshAsset.Object);
+	static ConstructorHelpers::FObjectFinder<UStaticMesh>CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
+	rigidBody->SetStaticMesh(CubeMeshAsset.Object);
 
 	gameCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("GameCamera"));
 
@@ -49,17 +49,33 @@ void APlayerController_::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 void APlayerController_::CheckIfLanded()
 {
-	//extra gravity to player's heavier feeling
+	//extra gravity to simulate a heavier player
 	rigidBody->SetPhysicsLinearVelocity(rigidBody->GetPhysicsLinearVelocity() - gameCamera->GetUpVector() * gravityMultiplier);
 
-	//Check if is landed
-	auto t = rigidBody->GetPhysicsLinearVelocity();
-	if (abs(t.Z) < minZToBeLanded)
-		isLanded = true;
-	else
+
+	//Check if landed by raycast
+	FHitResult testHitResult;
+	UWorld* TheWorld = this->GetWorld();
+	FVector testStartFVector = rigidBody->GetComponentLocation();
+	FVector testEndFVector = testStartFVector - gameCamera->GetUpVector() * 100;
+
+	FCollisionQueryParams TraceParams;// (TEXT("TraceOfAwesome"));
+
+	if (TheWorld->LineTraceSingleByObjectType(testHitResult, testStartFVector, testEndFVector, ECC_WorldStatic, TraceParams))
 	{		
-		isLanded = false;
+		if (testHitResult.Distance < minZToBeLanded)
+			isLanded = true;
+		else
+		{
+			isLanded = false;
+		}
 	}
+	else
+	{
+		isLanded = false;		
+	}
+		
+	
 }
 
 void APlayerController_::BindInput()
@@ -80,11 +96,11 @@ void APlayerController_::UpdateCamera(float dt)
 	{
 		camPos.X += camSpeed * dt;
 	}
-	if (playerPos.Z < camPos.Z)
+	if (playerPos.Z < camPos.Z + verticalOffset)
 	{
 		camPos.Z -= camSpeed * dt;
 	}
-	if (playerPos.Z > camPos.Z)
+	if (playerPos.Z > camPos.Z + verticalOffset)
 	{
 		camPos.Z += camSpeed * dt;
 	}
@@ -95,7 +111,6 @@ void APlayerController_::UpdateCamera(float dt)
 void APlayerController_::Jump()
 {
 	if (isLanded) {
-		LOG_SCREEN_DT("jump", 0.5f);
 		rigidBody->SetPhysicsLinearVelocity(gameCamera->GetUpVector() * jumpForce);
 	}	
 }
@@ -112,6 +127,5 @@ void APlayerController_::MoveHorizontal(float value)
 		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * value * moveSpeed);
 	else
 		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * value * moveSpeed * airMovementFraction);
-	FString m = FString("Move: ") + rigidBody->GetPhysicsLinearVelocity().ToString();
-	LOG_SCREEN_DT(m, 0.05f);
+
 }

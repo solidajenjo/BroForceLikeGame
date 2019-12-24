@@ -64,6 +64,9 @@ public:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Game Camera")
 	float camSpeed = 0.f;
 
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Game Camera")
+	float verticalOffset = 0.f;
+
 	UInputComponent* input;
 
 	bool isLanded = false;
