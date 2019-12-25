@@ -18,6 +18,9 @@ APlayerController_::APlayerController_()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh>CubeMeshAsset(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	rigidBody->SetStaticMesh(CubeMeshAsset.Object);
 
+	aimRotator = CreateDefaultSubobject<USceneComponent>("AimRotator");
+	aimRotator->AttachToComponent(rigidBody, FAttachmentTransformRules::KeepRelativeTransform);
+
 	frontCollider = CreateDefaultSubobject<USphereComponent>(TEXT("FrontCollider"));
 	frontCollider->SetSphereRadius(20.f);
 	frontCollider->SetGenerateOverlapEvents(true);
@@ -44,6 +47,7 @@ void APlayerController_::Tick(float DeltaTime)
 	InertiaControl();
 	CheckIfLanded();	
 	RotatePlayer();
+	CalculateAimAngle();
 
 	if (bFrontCollision) {
 		LOG_SCREEN_DT("Front col", 0.05f);
@@ -106,6 +110,8 @@ void APlayerController_::BindInput()
 {
 	Super::InputComponent->BindAction("Jump", IE_Pressed, this, &APlayerController_::Jump);
 	Super::InputComponent->BindAxis("MoveForward", this, &APlayerController_::MoveHorizontal);
+	Super::InputComponent->BindAxis("LookVertical", this, &APlayerController_::LookVertical);
+	Super::InputComponent->BindAxis("LookHorizontal", this, &APlayerController_::LookHorizontal);
 }
 
 
@@ -152,7 +158,7 @@ void APlayerController_::MoveHorizontal(float value)
 	if (abs(value) < 0.5f) { //Avoid thumbstick rebound
 		return;
 	}
-
+	lookDirectionFactor = value < 0.f ? -1.f : 1.f;
 	FVector pLV = rigidBody->GetPhysicsLinearVelocity();
 	pLV.X = 0.f;
 
@@ -171,4 +177,25 @@ void APlayerController_::MoveHorizontal(float value)
 		targetRot = FQuat::MakeFromEuler(FVector(0.f, 0.f, 180.f)).Rotator();
 	}
 
+}
+
+void APlayerController_::LookVertical(float value)
+{
+	yLookFactor = -value;
+}
+
+void APlayerController_::LookHorizontal(float value)
+{
+	xLookFactor = value * lookDirectionFactor;
+}
+
+void APlayerController_::CalculateAimAngle()
+{
+	lookAngle = FMath::Atan2(yLookFactor, xLookFactor);
+	lookAngle = FMath::Clamp(lookAngle, -.7f, 1.5f);
+	FString s = FString("Axis value: X->") + FString::SanitizeFloat(xLookFactor) + FString(" Y->") +
+		FString::SanitizeFloat(yLookFactor) + FString(" | Angle: ") + FString::SanitizeFloat(lookAngle);
+	LOG_INFO(s);
+
+	aimRotator->SetRelativeRotation(FQuat::MakeFromEuler(FVector(0.f, FMath::RadiansToDegrees(lookAngle), 0.f)));
 }

@@ -42,6 +42,9 @@ public:
 
 	void Jump();	
 	void MoveHorizontal(float value);
+	void LookVertical(float value);
+	void LookHorizontal(float value);
+	void CalculateAimAngle();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* rigidBody = nullptr;
@@ -53,6 +56,7 @@ public:
 	UCameraComponent* gameCamera = nullptr;
 
 	USceneComponent* root = nullptr;
+	USceneComponent* aimRotator = nullptr;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float jumpForce = 0.f;
@@ -84,4 +88,9 @@ public:
 
 	bool isLanded = false;
 	FRotator targetRot;
+
+	float yLookFactor = 0.f;
+	float xLookFactor = 0.f;
+	float lookDirectionFactor = 1.f;
+	float lookAngle = 0.f;
 };
