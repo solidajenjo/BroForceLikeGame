@@ -1,5 +1,7 @@
 #pragma once
 
+#define PI 3.14159265358979323846264f
+
 #include "Engine.h"
 
 #define LOG_INFO(t) { UE_LOG(LogTemp,Log, TEXT("%s"), *t);}

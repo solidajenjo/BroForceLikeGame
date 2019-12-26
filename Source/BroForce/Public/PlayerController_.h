@@ -2,6 +2,11 @@
 
 #pragma once
 
+#define SHOT_POOL_SIZE 20
+#define NARNIA FVector(100000.f, 100000.f, 100000.f)
+
+#include <queue>
+
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "PlayerController_.generated.h"
@@ -9,6 +14,7 @@
 class UCameraComponent;
 class UStaticMeshComponent;
 class USphereComponent;
+class AShot;
 
 UCLASS()
 class BROFORCE_API APlayerController_ : public APawn
@@ -32,24 +38,36 @@ public:
 
 	void BindInput();
 
-	void InertiaControl();
-	void CheckIfLanded();
+	void InertiaControl(float dt);
+	void CheckIfLanded(float dt);
+	void UpdateTimers(float dt);
 	
 	void UpdateCamera(float dt);
 	void RotatePlayer();
 
-	//Actions
+	void ReleaseShot(AShot* shot);
 
-	void Jump();	
+	//Events 
+	UFUNCTION()
+	void FrontOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void FrontOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	//Control actions
+
+	void Jump();
+	void Shoot();
 	void MoveHorizontal(float value);
 	void LookVertical(float value);
 	void LookHorizontal(float value);
-	void CalculateAimAngle();
+	void ManageAimAndOrientation();
+	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UStaticMeshComponent* rigidBody = nullptr;
 
-	UPROPERTY(Category = "mycomp", VisibleDefaultsOnly)
+	UPROPERTY(VisibleDefaultsOnly)
 	USphereComponent* frontCollider = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
@@ -57,6 +75,9 @@ public:
 
 	USceneComponent* root = nullptr;
 	USceneComponent* aimRotator = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	USceneComponent* aimPoint = nullptr;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float jumpForce = 0.f;
@@ -82,6 +103,15 @@ public:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Game Camera")
 	float verticalOffset = 0.f;
 
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot paramters")
+	float shotSpeed = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot paramters")
+	float shotCooldown = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot paramters")
+	float shotTimeToLive = 0.f;
+
 	UPROPERTY(VisibleAnyWhere, BlueprintReadWrite)
 	bool bFrontCollision = false;
 
@@ -91,6 +121,8 @@ public:
 
 	float yLookFactor = 0.f;
 	float xLookFactor = 0.f;
-	float lookDirectionFactor = 1.f;
 	float lookAngle = 0.f;
+	float shotCooldownTimer = 0.f;
+
+	std::queue<AShot*> shotsReady;
 };
