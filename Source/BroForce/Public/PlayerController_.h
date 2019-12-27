@@ -62,6 +62,7 @@ public:
 	void LookVertical(float value);
 	void LookHorizontal(float value);
 	void ManageAimAndOrientation();
+	void ManageMovement(float dt);
 	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
@@ -101,6 +102,9 @@ public:
 	float camSpeed = 0.f;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Game Camera")
+	float camDistanceFactor = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Game Camera")
 	float verticalOffset = 0.f;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot paramters")
@@ -123,6 +127,8 @@ public:
 	float xLookFactor = 0.f;
 	float lookAngle = 0.f;
 	float shotCooldownTimer = 0.f;
+
+	float horizontalMovementAmount = 0.f;
 
 	std::queue<AShot*> shotsReady;
 };

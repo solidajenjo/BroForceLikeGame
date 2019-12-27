@@ -37,9 +37,9 @@ void AShot::Tick(float DeltaTime)
 
 void AShot::shotHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	FString s = GetName() +  FString(" S -> ") + OtherComp->GetName() + FString("|") + OtherActor->GetName() +
-		FString(" ") + OtherActor->GetActorLocation().ToString();
-	LOG_SCREEN_DT(s, 5.0f);
+	//FString s = GetName() +  FString(" S -> ") + OtherComp->GetName() + FString("|") + OtherActor->GetName() +
+	//	FString(" ") + OtherActor->GetActorLocation().ToString();
+	//LOG_SCREEN_DT(s, 5.0f);
 	Stop();
 }
 

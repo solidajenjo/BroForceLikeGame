@@ -55,6 +55,7 @@ void APlayerController_::BeginPlay()
 		newShot->rigidBody->BodyInstance.bLockYRotation = true;
 		newShot->rigidBody->BodyInstance.bLockZRotation = true;
 		newShot->timeToLive = shotTimeToLive;
+
 		shotsReady.push(newShot);
 	}
 }
@@ -69,7 +70,7 @@ void APlayerController_::Tick(float DeltaTime)
 	CheckIfLanded(DeltaTime);	
 	RotatePlayer();
 	ManageAimAndOrientation();
-
+	ManageMovement(DeltaTime);
 	//if (bFrontCollision) {
 	//	LOG_SCREEN_DT("Front col", 0.05f);
 	//}
@@ -96,13 +97,7 @@ void APlayerController_::InertiaControl(float dt)
 }
 
 void APlayerController_::CheckIfLanded(float dt)
-{
-	FVector pLV = rigidBody->GetPhysicsLinearVelocity();
-
-	//extra gravity to simulate a heavier player
-	rigidBody->SetPhysicsLinearVelocity(rigidBody->GetPhysicsLinearVelocity() - (gameCamera->GetUpVector() * dt) * gravityMultiplier);
-
-
+{	
 	//Check if landed by raycast
 	FHitResult testHitResult;
 	UWorld* TheWorld = this->GetWorld();
@@ -117,15 +112,13 @@ void APlayerController_::CheckIfLanded(float dt)
 			isLanded = true;
 		else
 		{
-			isLanded = false;
+			isLanded = false;			
 		}
 	}
 	else
 	{
 		isLanded = false;		
 	}
-		
-	
 }
 
 void APlayerController_::UpdateTimers(float dt)
@@ -149,23 +142,25 @@ void APlayerController_::UpdateCamera(float dt)
 {
 	FVector camPos = gameCamera->GetComponentLocation();
 	FVector playerPos = rigidBody->GetComponentLocation();
+
+	float hDist = camDistanceFactor * abs(playerPos.X - camPos.X) * dt;
+	float vDist = camDistanceFactor * abs(playerPos.Z - camPos.Z) * dt;
 	if (playerPos.X < camPos.X) 
 	{
-		camPos.X -= camSpeed * dt;
+		camPos.X -= hDist * camSpeed;
 	}
 	if (playerPos.X > camPos.X)
 	{
-		camPos.X += camSpeed * dt;
+		camPos.X += hDist * camSpeed;
 	}
 	if (playerPos.Z < camPos.Z + verticalOffset)
 	{
-		camPos.Z -= camSpeed * dt;
+		camPos.Z -= vDist * camSpeed;
 	}
 	if (playerPos.Z > camPos.Z + verticalOffset)
 	{
-		camPos.Z += camSpeed * dt;
+		camPos.Z += vDist * camSpeed;
 	}
-
 	gameCamera->SetWorldLocation(camPos);
 }
 
@@ -214,18 +209,12 @@ void APlayerController_::Shoot()
 
 void APlayerController_::MoveHorizontal(float value)
 {
-	if (abs(value) < 0.5f) { //Avoid thumbstick rebound
+	if (abs(value) < 0.5f) //Avoid thumbstick rebound
+	{ 
+		horizontalMovementAmount = 0.f;
 		return;
 	}
-	FVector pLV = rigidBody->GetPhysicsLinearVelocity();
-	pLV.X = 0.f;
-
-	if (isLanded)
-		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * value * moveSpeed);
-	else
-		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * value * moveSpeed * airMovementFraction);
-
-	FRotator rBRot = rigidBody->GetComponentRotation();
+	horizontalMovementAmount = value;	
 
 }
 
@@ -258,4 +247,20 @@ void APlayerController_::ManageAimAndOrientation()
 
 	targetRot = isLookingLeft ? FQuat::MakeFromEuler(FVector(0.f, 0.f, 0.f)).Rotator() : FQuat::MakeFromEuler(FVector(0.f, 0.f, 180.f)).Rotator();
 
+}
+
+void APlayerController_::ManageMovement(float dt)
+{
+	if (horizontalMovementAmount == 0.f)
+		return;
+
+	FVector pLV = rigidBody->GetPhysicsLinearVelocity();
+	pLV.X = 0.f;
+
+	if (isLanded)
+		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * horizontalMovementAmount * moveSpeed);
+	else
+		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * horizontalMovementAmount * moveSpeed * airMovementFraction);
+
+	FRotator rBRot = rigidBody->GetComponentRotation();
 }
