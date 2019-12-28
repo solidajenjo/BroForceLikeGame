@@ -41,8 +41,7 @@ void APlayerController_::BeginPlay()
 
 	targetRot = FQuat::MakeFromEuler(FVector(0.f, 0.f, 180.f)).Rotator();
 
-	frontCollider->OnComponentBeginOverlap.AddDynamic(this, &APlayerController_::FrontOverlapBegin);
-	frontCollider->OnComponentEndOverlap.AddDynamic(this, &APlayerController_::FrontOverlapEnd);
+	BindColliders();
 
 	for (size_t i = 0; i < SHOT_POOL_SIZE; ++i) 
 	{
@@ -71,11 +70,11 @@ void APlayerController_::Tick(float DeltaTime)
 	RotatePlayer();
 	ManageAimAndOrientation();
 	ManageMovement(DeltaTime);
-	//if (bFrontCollision) {
-	//	LOG_SCREEN_DT("Front col", 0.05f);
+	//if (isInStair) {
+	//	LOG_SCREEN_DT("In stair", 0.05f);
 	//}
 	//else
-	//	LOG_SCREEN_DT("NO Front col", 0.05f);
+	//	LOG_SCREEN_DT("NO in stair", 0.05f);
 }
 
 // Called to bind functionality to input
@@ -98,6 +97,8 @@ void APlayerController_::InertiaControl(float dt)
 
 void APlayerController_::CheckIfLanded(float dt)
 {	
+	if (isUsingStair)
+		return;
 	//Check if landed by raycast
 	FHitResult testHitResult;
 	UWorld* TheWorld = this->GetWorld();
@@ -108,7 +109,8 @@ void APlayerController_::CheckIfLanded(float dt)
 
 	if (TheWorld->LineTraceSingleByObjectType(testHitResult, testStartFVector, testEndFVector, ECC_WorldStatic, TraceParams))
 	{		
-		if (testHitResult.Distance < minZToBeLanded)
+		auto t = testHitResult.Component.Get()->ComponentTags;
+		if (testHitResult.Distance < minZToBeLanded && testHitResult.Component.Get()->ComponentHasTag(FName(WALKABLE_TAG)))
 			isLanded = true;
 		else
 		{
@@ -120,6 +122,7 @@ void APlayerController_::CheckIfLanded(float dt)
 		isLanded = false;		
 	}
 }
+
 
 void APlayerController_::UpdateTimers(float dt)
 {
@@ -133,8 +136,19 @@ void APlayerController_::BindInput()
 	Super::InputComponent->BindAction("Jump", IE_Pressed, this, &APlayerController_::Jump);
 	Super::InputComponent->BindAction("Shoot", IE_Pressed, this, &APlayerController_::Shoot);
 	Super::InputComponent->BindAxis("MoveForward", this, &APlayerController_::MoveHorizontal);
+	Super::InputComponent->BindAxis("MoveVertical", this, &APlayerController_::MoveVertical);
 	Super::InputComponent->BindAxis("LookVertical", this, &APlayerController_::LookVertical);
 	Super::InputComponent->BindAxis("LookHorizontal", this, &APlayerController_::LookHorizontal);
+}
+
+void APlayerController_::BindColliders()
+{
+	frontCollider->OnComponentBeginOverlap.AddDynamic(this, &APlayerController_::FrontOverlapBegin);
+	frontCollider->OnComponentEndOverlap.AddDynamic(this, &APlayerController_::FrontOverlapEnd);
+
+	rigidBody->OnComponentBeginOverlap.AddDynamic(this, &APlayerController_::RBOverlapBegin);
+	rigidBody->OnComponentEndOverlap.AddDynamic(this, &APlayerController_::RBOverlapEnd);
+
 }
 
 
@@ -187,6 +201,22 @@ void APlayerController_::FrontOverlapEnd(UPrimitiveComponent* OverlappedComponen
 	bFrontCollision = false;
 }
 
+void APlayerController_::RBOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherComp->ComponentHasTag(FName(STAIR_TAG))) {
+		isInStair = true;
+	}
+}
+
+void APlayerController_::RBOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherComp->ComponentHasTag(FName(STAIR_TAG))) {
+		isInStair = false;
+		isUsingStair = false;
+		rigidBody->BodyInstance.SetEnableGravity(true);
+	}
+}
+
 void APlayerController_::Jump()
 {
 	if (isLanded) {
@@ -215,6 +245,22 @@ void APlayerController_::MoveHorizontal(float value)
 		return;
 	}
 	horizontalMovementAmount = value;	
+
+}
+
+void APlayerController_::MoveVertical(float value)
+{
+	if (abs(value) < 0.2f)
+		return;
+
+	if (isInStair)
+	{
+		isUsingStair = true;
+		rigidBody->BodyInstance.SetEnableGravity(false);
+		FVector pLV = rigidBody->GetPhysicsLinearVelocity();
+		pLV.Z = 0.f;
+		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetUpVector() * value * stairSpeed);
+	}
 
 }
 
@@ -251,7 +297,7 @@ void APlayerController_::ManageAimAndOrientation()
 
 void APlayerController_::ManageMovement(float dt)
 {
-	if (horizontalMovementAmount == 0.f)
+	if (horizontalMovementAmount == 0.f || (isUsingStair && abs(horizontalMovementAmount) < 0.4f))
 		return;
 
 	FVector pLV = rigidBody->GetPhysicsLinearVelocity();
@@ -259,7 +305,9 @@ void APlayerController_::ManageMovement(float dt)
 
 	if (isLanded)
 		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * horizontalMovementAmount * moveSpeed);
-	else
+	else if (isUsingStair)
+		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * horizontalMovementAmount * stairSpeed * airMovementFraction * airMovementFraction);
+	else //is in the air
 		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * horizontalMovementAmount * moveSpeed * airMovementFraction);
 
 	FRotator rBRot = rigidBody->GetComponentRotation();

@@ -37,9 +37,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void BindInput();
+	void BindColliders();
 
 	void InertiaControl(float dt);
 	void CheckIfLanded(float dt);
+	void CheckIfUsingStair();
 	void UpdateTimers(float dt);
 	
 	void UpdateCamera(float dt);
@@ -54,11 +56,18 @@ public:
 	UFUNCTION()
 	void FrontOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	UFUNCTION()
+	void RBOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void RBOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 	//Control actions
 
 	void Jump();
 	void Shoot();
 	void MoveHorizontal(float value);
+	void MoveVertical(float value);
 	void LookVertical(float value);
 	void LookHorizontal(float value);
 	void ManageAimAndOrientation();
@@ -85,6 +94,9 @@ public:
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float moveSpeed = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
+	float stairSpeed = 0.f;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float airMovementFraction = 0.f;
@@ -121,6 +133,9 @@ public:
 
 
 	bool isLanded = false;
+	bool isInStair = false;
+	bool isUsingStair = false;
+	
 	FRotator targetRot;
 
 	float yLookFactor = 0.f;
