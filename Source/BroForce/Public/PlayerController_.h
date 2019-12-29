@@ -96,7 +96,10 @@ public:
 	float moveSpeed = 0.f;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
-	float stairSpeed = 0.f;
+	float stairVerticalSpeed = 0.f;
+
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
+	float stairHorizontalSpeed = 0.f;
 
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float airMovementFraction = 0.f;

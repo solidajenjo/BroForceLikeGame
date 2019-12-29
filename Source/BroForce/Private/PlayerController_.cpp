@@ -259,7 +259,7 @@ void APlayerController_::MoveVertical(float value)
 		rigidBody->BodyInstance.SetEnableGravity(false);
 		FVector pLV = rigidBody->GetPhysicsLinearVelocity();
 		pLV.Z = 0.f;
-		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetUpVector() * value * stairSpeed);
+		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetUpVector() * value * stairVerticalSpeed);
 	}
 
 }
@@ -297,18 +297,25 @@ void APlayerController_::ManageAimAndOrientation()
 
 void APlayerController_::ManageMovement(float dt)
 {
-	if (horizontalMovementAmount == 0.f || (isUsingStair && abs(horizontalMovementAmount) < 0.4f))
+	float absHMA = abs(horizontalMovementAmount);
+	if (horizontalMovementAmount == 0.f && !isUsingStair)
 		return;
 
 	FVector pLV = rigidBody->GetPhysicsLinearVelocity();
 	pLV.X = 0.f;
 
 	if (isLanded)
-		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * horizontalMovementAmount * moveSpeed);
+		pLV += gameCamera->GetRightVector() * horizontalMovementAmount * moveSpeed;
 	else if (isUsingStair)
-		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * horizontalMovementAmount * stairSpeed * airMovementFraction * airMovementFraction);
+	{
+		if (absHMA > 0.9f) //TODO:Simplify this boolean expresion
+		{
+			
+			pLV += gameCamera->GetRightVector() * horizontalMovementAmount * stairHorizontalSpeed;
+		}
+	}
 	else //is in the air
-		rigidBody->SetPhysicsLinearVelocity(pLV + gameCamera->GetRightVector() * horizontalMovementAmount * moveSpeed * airMovementFraction);
+		pLV += gameCamera->GetRightVector() * horizontalMovementAmount * moveSpeed * airMovementFraction;
 
-	FRotator rBRot = rigidBody->GetComponentRotation();
+	rigidBody->SetPhysicsLinearVelocity(pLV);
 }
