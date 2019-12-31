@@ -6,8 +6,6 @@
 namespace CustomUtils
 {
 
-#define PI 3.14159265358979323846264f
-
 #define LOG_INFO(t) { UE_LOG(LogTemp,Log, TEXT("%s"), *t);}
 #define LOG_ERROR(t) { UE_LOG(LogTemp,Error, TEXT("%s"), *t);}
 #define LOG_WARNING(t) { UE_LOG(LogTemp,Warning, TEXT("%s"), *t);}

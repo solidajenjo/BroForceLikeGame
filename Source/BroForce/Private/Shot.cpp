@@ -23,6 +23,7 @@ void AShot::BeginPlay()
 {
 	Super::BeginPlay();	
 	rigidBody->OnComponentHit.AddDynamic(this, &AShot::shotHit);
+	rigidBody->SetRelativeScale3D(FVector(.2f, .2f, .2f));
 }
 
 // Called every frame
@@ -30,9 +31,20 @@ void AShot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	if (lifeTimer > 0.f)
+	{
 		lifeTimer -= DeltaTime;
+		FVector loc = GetActorLocation();
+		FVector tgt = loc + rigidBody->GetPhysicsLinearVelocity();
+		FRotator newRot;
+		if (tgt.X > loc.X)
+			newRot = (tgt - loc).Rotation();
+		else
+			newRot = (loc - tgt).Rotation();
+
+		SetActorRotation(newRot);
+	}
 	else if (!stopped)
-		Stop();
+		Stop();	
 }
 
 void AShot::shotHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -45,6 +57,7 @@ void AShot::shotHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrim
 
 void AShot::Go(const FVector& direction, const FVector& position)
 {
+	
 	SetActorLocation(position, false, nullptr, ETeleportType::TeleportPhysics);
 
 	FRotator newRot = (position + direction - position).Rotation();	
@@ -53,7 +66,6 @@ void AShot::Go(const FVector& direction, const FVector& position)
 	rigidBody->SetSimulatePhysics(true);
 	rigidBody->SetPhysicsLinearVelocity(GetActorForwardVector() * shotSpeed);
 	rigidBody->SetNotifyRigidBodyCollision(true);
-
 	lifeTimer = timeToLive;
 
 	stopped = false;
@@ -64,7 +76,6 @@ void AShot::Stop()
 	rigidBody->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	rigidBody->SetSimulatePhysics(false);
 	rigidBody->SetNotifyRigidBodyCollision(false);
-
 	owner->ReleaseShot(this);
 
 	stopped = true;

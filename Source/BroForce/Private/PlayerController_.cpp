@@ -45,14 +45,11 @@ void APlayerController_::BeginPlay()
 
 	for (size_t i = 0; i < SHOT_POOL_SIZE; ++i) 
 	{
-		AShot* newShot = GetWorld()->SpawnActor<AShot>(AShot::StaticClass(), NARNIA, FRotator::ZeroRotator);
+		AShot* newShot = GetWorld()->SpawnActor<AShot>(ShotBP, NARNIA, FRotator::ZeroRotator);
 		newShot->owner = this;
 		newShot->shotSpeed = shotSpeed;
 		newShot->rigidBody->SetEnableGravity(false);		
 		newShot->rigidBody->BodyInstance.bLockYTranslation = true;
-		newShot->rigidBody->BodyInstance.bLockXRotation = true;
-		newShot->rigidBody->BodyInstance.bLockYRotation = true;
-		newShot->rigidBody->BodyInstance.bLockZRotation = true;
 		newShot->timeToLive = shotTimeToLive;
 
 		shotsReady.push(newShot);
@@ -163,7 +160,7 @@ void APlayerController_::UpdateCamera(float dt)
 	{
 		camPos.X -= hDist * camSpeed;
 	}
-	if (playerPos.X > camPos.X)
+	else if (playerPos.X > camPos.X)
 	{
 		camPos.X += hDist * camSpeed;
 	}
@@ -171,7 +168,7 @@ void APlayerController_::UpdateCamera(float dt)
 	{
 		camPos.Z -= vDist * camSpeed;
 	}
-	if (playerPos.Z > camPos.Z + verticalOffset)
+	else if (playerPos.Z > camPos.Z + verticalOffset)
 	{
 		camPos.Z += vDist * camSpeed;
 	}
@@ -250,9 +247,6 @@ void APlayerController_::MoveHorizontal(float value)
 
 void APlayerController_::MoveVertical(float value)
 {
-	if (abs(value) < 0.2f)
-		return;
-
 	if (isInStair)
 	{
 		isUsingStair = true;

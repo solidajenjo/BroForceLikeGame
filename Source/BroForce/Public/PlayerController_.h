@@ -89,6 +89,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	USceneComponent* aimPoint = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Shot parameters")
+	TSubclassOf<AShot> ShotBP;
+
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Player movement")
 	float jumpForce = 0.f;
 
@@ -122,13 +125,13 @@ public:
 	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Game Camera")
 	float verticalOffset = 0.f;
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot paramters")
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot parameters")
 	float shotSpeed = 0.f;
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot paramters")
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot parameters")
 	float shotCooldown = 0.f;
 
-	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot paramters")
+	UPROPERTY(EditAnyWhere, BlueprintReadWrite, Category = "Shot parameters")
 	float shotTimeToLive = 0.f;
 
 	UPROPERTY(VisibleAnyWhere, BlueprintReadWrite)
